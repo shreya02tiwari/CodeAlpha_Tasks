@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Issue Tracker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: url('your-background-image.jpg') center/cover no-repeat;
+        }
+
+        #issueTracker {
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            width: 600px;
+        }
+
+        #header {
+            background-color: #007bff;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #issueForm, #attachmentForm {
+            padding: 20px;
+        }
+
+        input[type="text"], textarea, select, input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        select {
+            appearance: none;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #issues {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .issue {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            padding: 20px;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .issue:hover {
+            transform: scale(1.02);
+        }
+
+        .issue img {
+            width: 100%;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .attachment {
+            margin-bottom: 15px;
+            color: #007bff;
+            cursor: pointer;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="issueTracker">
+        <div id="header">
+            <h1>Issue Tracker</h1>
+        </div>
+
+        <form id="issueForm">
+            <label for="title">Title:</label>
+            <input type="text" id="title" required>
+
+            <label for="description">Description:</label>
+            <textarea id="description" required></textarea>
+
+            <label for="priority">Priority:</label>
+            <select id="priority">
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+            </select>
+
+            <label for="assignee">Assignee:</label>
+            <input type="text" id="assignee" required>
+
+            <button type="button" onclick="createIssue()">Create Issue</button>
+        </form>
+
+        <ul id="issues"></ul>
+
+        <form id="attachmentForm">
+            <label for="attachmentIssueId">Issue ID:</label>
+            <input type="number" id="attachmentIssueId" required>
+
+            <label for="attachment">Attachment:</label>
+            <input type="file" id="attachment" required>
+
+            <button type="button" onclick="uploadAttachment()">Upload Attachment</button>
+        </form>
+    </div>
+
+    <script>
+        function createIssue() {
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const priority = document.getElementById('priority').value;
+            const assignee = document.getElementById('assignee').value;
+
+            const issue = {
+                title: title,
+                description: description,
+                priority: priority,
+                assignee: assignee,
+                attachments: [],
+            };
+
+            addIssue(issue);
+            clearForm('issueForm');
+        }
+
+        function uploadAttachment() {
+            const issueId = document.getElementById('attachmentIssueId').value;
+            const attachmentInput = document.getElementById('attachment');
+            const attachment = attachmentInput.files[0];
+
+            if (!attachment) {
+                alert('Please select a file to upload.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function () {
+                const base64Data = reader.result.split(',')[1];
+
+                const issue = findIssueById(issueId);
+                if (issue) {
+                    issue.attachments.push({
+                        filename: attachment.name,
+                        data: base64Data,
+                    });
+                    addAttachment(issueId, attachment.name);
+                    clearForm('attachmentForm');
+                } else {
+                    alert('Issue not found.');
+                }
+            };
+
+            reader.readAsDataURL(attachment);
+        }
+
+        function findIssueById(id) {
+            const issues = document.getElementById('issues').children;
+            for (let i = 0; i < issues.length; i++) {
+                const issue = issues[i].getAttribute('data-id');
+                if (issue === id) {
+                    return JSON.parse(issues[i].innerText);
+                }
+            }
+            return null;
+        }
+
+        function addIssue(issue) {
+            const issuesList = document.getElementById('issues');
+            const issueItem = document.createElement('li');
+            issueItem.className = 'issue';
+            issueItem.setAttribute('data-id', issuesList.children.length + 1);
+            issueItem.innerHTML = `
+                <strong>${issue.title}</strong>
+                <p>${issue.description}</p>
+                <p>Priority: ${issue.priority}</p>
+                <p>Assignee: ${issue.assignee}</p>
+                <img src="https://via.placeholder.com/600" alt="Issue Image">
+            `;
+            issuesList.appendChild(issueItem);
+        }
+
+        function addAttachment(issueId, filename) {
+            const attachmentsList = document.getElementById('attachments');
+            const attachmentItem = document.createElement('li');
+            attachmentItem.className = 'attachment';
+            attachmentItem.innerHTML = `
+                <strong>Issue #${issueId}:</strong> ${filename}
+            `;
+            attachmentsList.appendChild(attachmentItem);
+        }
+
+        function clearForm(formId) {
+            const form = document.getElementById(formId);
+            form.reset();
+        }
+    </script>
+</body>
+</html>
